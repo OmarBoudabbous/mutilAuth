@@ -34,12 +34,10 @@ Route::middleware(['auth','role:admin'])->group(function () {
 Route::middleware(['auth','role:manager'])->group(function () {
     Route::get('/manager/dashboard',[ManagerController::class,'managerDashboard'])->name('manager.dashboard');
 
-
 });
 
 // route for driver
 Route::middleware(['auth','role:driver'])->group(function () {
-  
     Route::get('/driver/dashboard',[DriverController::class,'driverDashboard'])->name('driver.dashboard');
 });
 
