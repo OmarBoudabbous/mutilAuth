@@ -28,6 +28,14 @@ require __DIR__ . '/auth.php';
 // route for admin
 Route::middleware(['auth','role:admin'])->group(function () {
     Route::get('/admin/dashboard',[AdminController::class,'adminDashboard'])->name('admin.dashboard');
+
+    Route::get('/admin/logout',[AdminController::class,'adminLogout'])->name('admin.logout');
+
+    Route::get('/admin/profile',[AdminController::class,'adminProfile'])->name('admin.profile');
+
+    Route::get('/admin/password',[AdminController::class,'adminPassword'])->name('admin.password');
+
+
 });
 
 // route for manager
