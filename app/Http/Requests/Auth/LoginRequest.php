@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +29,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -39,17 +41,30 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
+        // Step 1: Ensure the user is not rate-limited (too many failed login attempts)
         $this->ensureIsNotRateLimited();
-
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
-
+    
+        // Step 2: Find the user by either email or name
+        $user = User::where('email', $this->login) // Check if login matches email
+                    ->orWhere('name', $this->login) // Check if login matches username
+                    ->first(); // Retrieve the first matching user
+    
+        // Step 3: Check if the user exists and the password is correct
+        if (!$user || !Hash::check($this->password, $user->password)) {
+            // If user is not found or password doesn't match, hit the rate limiter
+            RateLimiter::hit($this->throttleKey()); // Increment failed attempts for this throttle key
+    
+            // Throw a validation exception with an error message
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'login' => trans('auth.failed'), // Translate and display the login failed message
             ]);
         }
-
-        RateLimiter::clear($this->throttleKey());
+    
+        // Step 4: Log the user in if credentials are correct
+        Auth::login($user, $this->boolean('remember')); // Log in the user, optionally remember them
+    
+        // Step 5: Clear the rate limiter after successful login
+        RateLimiter::clear($this->throttleKey()); // Reset the failed login attempts
     }
 
     /**
